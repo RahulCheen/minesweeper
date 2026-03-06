@@ -3,6 +3,7 @@ import random
 import time
 import sys
 import math
+import sqlite3
 from constants import *
 
 # Initialize Pygame
@@ -22,6 +23,42 @@ except Exception:
     font_medium = pygame.font.Font(None, 24)
     font_large = pygame.font.Font(None, 28)
     font_title = pygame.font.Font(None, 32)
+
+class TimeDB:
+    def __init__(self, db_name="times.db"):
+        self.conn = sqlite3.connect(db_name)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS best_times (
+                difficulty TEXT PRIMARY KEY,
+                best_time REAL
+            )
+        ''')
+        self.conn.commit()
+
+    def update_time(self, difficulty, time_val):
+        self.cursor.execute('SELECT best_time FROM best_times WHERE difficulty = ?', (difficulty,))
+        row = self.cursor.fetchone()
+        
+        if row is None:
+            self.cursor.execute('INSERT INTO best_times (difficulty, best_time) VALUES (?, ?)', (difficulty, time_val))
+            self.conn.commit()
+            return time_val
+        else:
+            best = row[0]
+            if time_val < best:
+                self.cursor.execute('UPDATE best_times SET best_time = ? WHERE difficulty = ?', (time_val, difficulty))
+                self.conn.commit()
+                return time_val
+            return best
+
+    def get_best_time(self, difficulty):
+        self.cursor.execute('SELECT best_time FROM best_times WHERE difficulty = ?', (difficulty,))
+        row = self.cursor.fetchone()
+        return row[0] if row else None
+
+    def close(self):
+        self.conn.close()
 
 class Button:
     def __init__(self, x, y, width, height, text, font):
@@ -269,6 +306,9 @@ class Game:
         settings = DIFFICULTIES[self.difficulty_name]
         self.board = Board(settings["cols"], settings["rows"], settings["mines"])
         
+        self.db = TimeDB()
+        self.best_time = None
+        
         self.start_timer = 0.0
         self.end_time = 0.0
         
@@ -396,6 +436,7 @@ class Game:
         self.board = Board(settings["cols"], settings["rows"], settings["mines"])
         self.start_timer = 0.0
         self.end_time = 0.0
+        self.best_time = None
         
         # Randomize theme on reset/new game UNLESS explicitly changing difficulty 
         # Actually prompt says: randomize when launched, new diff selected, or new game started
@@ -551,21 +592,55 @@ class Game:
         
         # Draw Game Over Text Overlay (Optional visual cue)
         if self.board.game_over:
-            msg = "YOU WIN!" if self.board.won else "GAME OVER!"
-            color = (0, 128, 0) if self.board.won else RED
-            text = font_large.render(msg, False, color)
-            text_rect = text.get_rect(center=(self.screen.get_width() // 2, TOP_BAR_HEIGHT // 2))
-            
-            # Since topbar is busy, let's draw it in center of the board
             board_center_y = self.board_offset_y + (self.board.rows * self.cell_size) // 2
-            text_rect.centery = board_center_y
             
-            bg_rect = pygame.Rect(0, 0, text_rect.width + 20, text_rect.height + 10)
-            bg_rect.center = text_rect.center
+            if self.board.won:
+                title_msg = "YOU WIN!"
+                title_color = (0, 128, 0) # Green
+                
+                if self.difficulty_name != "Custom" and self.best_time is not None:
+                    if self.end_time <= self.best_time:
+                        title_msg = "NEW RECORD!"
+                        title_color = (255, 215, 0) # Gold
+                        
+                    lines = [
+                        (title_msg, font_large, title_color),
+                        (f"Time: {self.end_time:.1f}s", font_medium, BLACK),
+                        (f"Best: {self.best_time:.1f}s", font_medium, BLACK)
+                    ]
+                else:
+                    lines = [
+                        (title_msg, font_large, title_color),
+                        (f"Time: {self.end_time:.1f}s", font_medium, BLACK)
+                    ]
+            else:
+                lines = [
+                    ("GAME OVER!", font_large, RED)
+                ]
+                
+            # Compute total height and max width
+            total_h = 0
+            max_w = 0
+            rendered_lines = []
+            for text, font, color in lines:
+                surf = font.render(text, False, color)
+                rendered_lines.append(surf)
+                max_w = max(max_w, surf.get_width())
+                total_h += surf.get_height() + 10
             
-            pygame.draw.rect(self.screen, WHITE, bg_rect)
-            pygame.draw.rect(self.screen, BLACK, bg_rect, 2)
-            self.screen.blit(text, text_rect)
+            total_h -= 10 # Remove trailing margin
+            
+            bg_rect = pygame.Rect(0, 0, max_w + 40, total_h + 30)
+            bg_rect.center = (self.screen.get_width() // 2, board_center_y)
+            
+            pygame.draw.rect(self.screen, theme["bg"], bg_rect, border_radius=8)
+            pygame.draw.rect(self.screen, BLACK, bg_rect, 3, border_radius=8)
+            
+            current_y = bg_rect.y + 15
+            for surf in rendered_lines:
+                s_rect = surf.get_rect(centerx=bg_rect.centerx, y=current_y)
+                self.screen.blit(surf, s_rect)
+                current_y += surf.get_height() + 10
 
         # Draw custom popup over everything else if open
         if self.custom_popup_open:
@@ -699,6 +774,8 @@ class Game:
                                 self.board.reveal(grid_x, grid_y)
                                 if self.board.game_over and self.end_time == 0.0:
                                     self.end_time = time.time() - self.start_timer
+                                    if self.board.won and self.difficulty_name != "Custom":
+                                        self.best_time = self.db.update_time(self.difficulty_name, self.end_time)
                             elif event.button == 3: # Right click (Flag)
                                 self.board.toggle_flag(grid_x, grid_y)
 
