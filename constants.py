@@ -1,27 +1,22 @@
 import pygame
 
-# Difficulty settings (Columns, Rows, Mines)
 DIFFICULTIES = {
     "Beginner": {"cols": 9, "rows": 9, "mines": 10},
     "Intermediate": {"cols": 16, "rows": 16, "mines": 40},
     "Expert": {"cols": 30, "rows": 16, "mines": 99},
-    "Custom": {"cols": 20, "rows": 20, "mines": 60} # Defaults, will be updated by popup
+    "Custom": {"cols": 20, "rows": 20, "mines": 60}
 }
 
 DEFAULT_DIFFICULTY = "Intermediate"
 
-# Custom Difficulty Limits
 MIN_CUSTOM_COLS = 5
 MAX_CUSTOM_COLS = 50
 MIN_CUSTOM_ROWS = 5
 MAX_CUSTOM_ROWS = 30
 
-# Dimensions
 CELL_SIZE = 30
 TOP_BAR_HEIGHT = 80
 MIN_WIDTH = 550
-
-# Colors
 TEXT_COLOR = (0, 0, 0)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
@@ -102,17 +97,15 @@ THEMES = {
     }
 }
 
-# Number Colors
 NUM_COLORS = {
-    1: (0, 0, 255),       # Blue
-    2: (0, 128, 0),       # Green
-    3: (255, 0, 0),       # Red
-    4: (0, 0, 128),       # Dark Blue
-    5: (128, 0, 0),       # Maroon
-    6: (0, 128, 128),     # Cyan
-    7: (0, 0, 0),         # Black
-    8: (128, 128, 128)    # Gray
+    1: (0, 0, 255),
+    2: (0, 128, 0),
+    3: (255, 0, 0),
+    4: (0, 0, 128),
+    5: (128, 0, 0),
+    6: (0, 128, 128),
+    7: (0, 0, 0),
+    8: (128, 128, 128)
 }
 
-# Framerate
 FPS = 60

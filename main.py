@@ -6,11 +6,9 @@ import math
 import sqlite3
 from constants import *
 
-# Initialize Pygame
 pygame.init()
 pygame.display.set_caption("Minesweeper")
 
-# Fonts (8-bit style)
 import os
 font_path = os.path.join(os.path.dirname(__file__), "Fonts", "PressStart2P-Regular.ttf")
 try:
@@ -70,18 +68,13 @@ class Button:
     def draw(self, screen, theme):
         color = theme["highlight"] if self.is_hovered else theme["hidden"]
         
-        # Draw base rounded rect
         pygame.draw.rect(screen, color, self.rect, border_radius=8)
         
-        # 3D Effect for rounded rects (fake it with an inner shadow/highlight rect)
         inner_rect = self.rect.inflate(-4, -4)
         pygame.draw.rect(screen, theme["highlight"], self.rect, width=2, border_radius=8)
-        # Top-left highlight
         pygame.draw.arc(screen, theme["highlight"], self.rect, 0, 3.14159/2, 2)
-        # Bottom-right shadow
         pygame.draw.rect(screen, theme["shadow"], inner_rect, width=2, border_radius=6)
         
-        # Render with AA disabled (False)
         text_surf = self.font.render(self.text, False, BLACK)
         text_rect = text_surf.get_rect(center=self.rect.center)
         screen.blit(text_surf, text_rect)
@@ -108,21 +101,17 @@ class Dropdown:
         is_hovered_main = self.rect.collidepoint(mouse_pos) or self.is_open
         color = theme["highlight"] if is_hovered_main else theme["hidden"]
 
-        # Draw main box matching Reset button
         pygame.draw.rect(screen, color, self.rect, border_radius=8)
         
-        # 3D Effect for rounded rects
         inner_rect = self.rect.inflate(-4, -4)
         pygame.draw.rect(screen, theme["highlight"], self.rect, width=2, border_radius=8)
         pygame.draw.arc(screen, theme["highlight"], self.rect, 0, 3.14159/2, 2)
         pygame.draw.rect(screen, theme["shadow"], inner_rect, width=2, border_radius=6)
         
-        # Render with AA disabled
         text = font_small.render(self.options[self.selected_idx], False, BLACK)
         text_rect = text.get_rect(center=self.rect.center)
         screen.blit(text, text_rect)
 
-        # Draw dropdown options
         if self.is_open:
             self.option_rects = []
             for i, option in enumerate(self.options):
@@ -132,13 +121,11 @@ class Dropdown:
                 is_hover = opt_rect.collidepoint(mouse_pos)
                 opt_color = theme["highlight"] if is_hover else theme["revealed"]
                 
-                # Bottom curve for the last item 
                 b_radius = 8 if i == len(self.options) - 1 else 0
                 
                 pygame.draw.rect(screen, opt_color, opt_rect, border_bottom_left_radius=b_radius, border_bottom_right_radius=b_radius)
                 pygame.draw.rect(screen, theme["shadow"], opt_rect, 1, border_bottom_left_radius=b_radius, border_bottom_right_radius=b_radius)
                 
-                # Render with AA disabled
                 opt_text = font_small.render(option, False, BLACK)
                 opt_text_rect = opt_text.get_rect(center=opt_rect.center)
                 screen.blit(opt_text, opt_text_rect)
@@ -150,9 +137,8 @@ class Dropdown:
                     if rect.collidepoint(event.pos):
                         self.selected_idx = i
                         self.is_open = False
-                        return True # Selection changed
+                        return True
                 
-                # Clicked outside options
                 self.is_open = False
             else:
                 if self.rect.collidepoint(event.pos):
@@ -180,21 +166,17 @@ class TextInput:
             if event.key == pygame.K_BACKSPACE:
                 self.text = self.text[:-1]
             elif event.unicode.isdigit():
-                # Limit length to 3 chars
                 if len(self.text) < 3:
                     self.text += event.unicode
                     
     def draw(self, screen, theme):
-        # Optional: slight background change when active instead of just white
         color = theme["highlight"] if self.active else WHITE
         pygame.draw.rect(screen, color, self.rect)
         pygame.draw.rect(screen, BLACK, self.rect, 2)
-        # Render with AA disabled
         txt_surf = self.font.render(self.text, False, BLACK)
         text_rect = txt_surf.get_rect(midleft=(self.rect.x + 5, self.rect.centery))
         screen.blit(txt_surf, text_rect)
         
-        # Blinking cursor
         if self.active:
             if pygame.time.get_ticks() % 1000 < 500:
                 cursor_x = text_rect.right + 2 if self.text else self.rect.x + 5
@@ -214,7 +196,6 @@ class Board:
         self.won = False
         self.flags_placed = 0
         
-        # Animation tracking (store time of reveal/flag)
         self.reveal_times = [[0 for _ in range(cols)] for _ in range(rows)]
         self.flag_times = [[0 for _ in range(cols)] for _ in range(rows)]
 
@@ -228,16 +209,14 @@ class Board:
 
         available_spots = [(x, y) for y in range(self.rows) for x in range(self.cols) if (x, y) not in safe_zone]
         
-        # Fallback if too few available spots
         if len(available_spots) < self.num_mines:
             available_spots = [(x, y) for y in range(self.rows) for x in range(self.cols) if (x, y) != (safe_x, safe_y)]
             
         self.mines = random.sample(available_spots, min(self.num_mines, len(available_spots)))
         
         for x, y in self.mines:
-            self.grid[y][x] = -1 # -1 represents a mine
+            self.grid[y][x] = -1
             
-        # Calc numbers for adjacent mines
         for y in range(self.rows):
             for x in range(self.cols):
                 if self.grid[y][x] == -1:
@@ -265,7 +244,6 @@ class Board:
             self.game_over = True
             return
 
-        # Flood fill empty space
         if self.grid[y][x] == 0:
             for dy in [-1, 0, 1]:
                 for dx in [-1, 0, 1]:
@@ -322,10 +300,8 @@ class Game:
         self.height = self.board.rows * CELL_SIZE + TOP_BAR_HEIGHT
         self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         
-        # Custom popup state
         self.custom_popup_open = False
         
-        # Init text inputs for custom popup
         custom_cols = DIFFICULTIES["Custom"]["cols"]
         custom_rows = DIFFICULTIES["Custom"]["rows"]
         popup_w, popup_h = 300, 250
@@ -338,11 +314,9 @@ class Game:
         self.update_screen_size()
 
     def update_screen_size(self):
-        # Enforce minimum width
         self.width = max(self.width, MIN_WIDTH)
         self.height = max(self.height, TOP_BAR_HEIGHT + 100)
         
-        # Enforce maximum dimensions relative to the actual desktop resolution
         try:
             desktop_sizes = pygame.display.get_desktop_sizes()
             if desktop_sizes:
@@ -350,21 +324,16 @@ class Game:
                 self.width = min(self.width, dt_w - 50)
                 self.height = min(self.height, dt_h - 100)
         except AttributeError:
-            # Fallback for older pygame version
             pass
         
         self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         
-        # Retrieve actual exact window size given by the OS
         self.width, self.height = self.screen.get_size()
         
-        # Calculate cell size and offsets
         max_cell_w = self.width // self.board.cols
         max_cell_h = (self.height - TOP_BAR_HEIGHT) // self.board.rows
-        self.cell_size = min(max_cell_w, max_cell_h, 60) # Cap max cell size at 60
+        self.cell_size = min(max_cell_w, max_cell_h, 60)
         
-        # If the window isn't bound by desktop limits, let's keep cell size exactly CELL_SIZE (30) when possible
-        # so windows don't arbitrarily stretch tiles immediately on generation
         if self.cell_size > CELL_SIZE:
             self.cell_size = CELL_SIZE
         
@@ -374,22 +343,17 @@ class Game:
         self.board_offset_x = (self.width - board_w) // 2
         self.board_offset_y = TOP_BAR_HEIGHT + (self.height - TOP_BAR_HEIGHT - board_h) // 2
         
-        # Center the reset button
         self.reset_btn = Button(self.width // 2 - 40, 25, 80, 30, "Reset", font_small)
         
-        # Right align theme dropdown
         self.theme_dropdown.rect.x = self.width - 110
         self.theme_dropdown.rect.y = 25
         self.dropdown.rect.y = 25
         
-        # Update popup elements positions
         self.popup_rect.center = (self.width // 2, self.height // 2)
-        # Position inputs relative to popup
         self.input_cols.rect.x = self.popup_rect.x + 160
         self.input_cols.rect.y = self.popup_rect.y + 60
         self.input_rows.rect.x = self.popup_rect.x + 160
         self.input_rows.rect.y = self.popup_rect.y + 120
-        # Position buttons
         self.apply_btn.rect.x = self.popup_rect.x + 30
         self.apply_btn.rect.y = self.popup_rect.y + 190
         self.cancel_btn.rect.x = self.popup_rect.x + 170
@@ -397,10 +361,7 @@ class Game:
 
     def calculate_custom_mines(self, cols, rows):
         tiles = cols * rows
-        # requested formula: mines = floor(tiles * (0.12 + 0.00018 * tiles))
         mines = math.floor(tiles * (0.12 + 0.00018 * tiles))
-        # Add guardbands so we don't have too few or too many mines
-        # Specifically ensuring a 3x3 gap is possible (at least 9 tiles empty)
         max_mines = max(1, tiles - 9)
         mines = min(mines, max_mines)
         mines = max(1, mines)
@@ -417,7 +378,6 @@ class Game:
         except ValueError:
             rows = DIFFICULTIES["Custom"]["rows"]
             
-        # Clamp to min/max
         cols = max(MIN_CUSTOM_COLS, min(cols, MAX_CUSTOM_COLS))
         rows = max(MIN_CUSTOM_ROWS, min(rows, MAX_CUSTOM_ROWS))
         
@@ -427,7 +387,6 @@ class Game:
         DIFFICULTIES["Custom"]["rows"] = rows
         DIFFICULTIES["Custom"]["mines"] = mines
         
-        # Reflect clamping in inputs
         self.input_cols.text = str(cols)
         self.input_rows.text = str(rows)
 
@@ -438,12 +397,9 @@ class Game:
         self.end_time = 0.0
         self.best_time = None
         
-        # Randomize theme on reset/new game UNLESS explicitly changing difficulty 
-        # Actually prompt says: randomize when launched, new diff selected, or new game started
         self.theme_name = random.choice(list(THEMES.keys()))
         self.theme = THEMES[self.theme_name]
         
-        # Keep dropdowns in sync
         themes_list = list(THEMES.keys())
         self.theme_dropdown.selected_idx = themes_list.index(self.theme_name)
         
@@ -470,24 +426,20 @@ class Game:
                 rect = pygame.Rect(rectx, recty, self.cell_size, self.cell_size)
                 
                 if not self.board.revealed[y][x]:
-                    # Hover effect
                     base_color = theme["hidden"]
                     if not self.board.game_over and rect.collidepoint(mouse_pos) and not self.board.flagged[y][x]:
                         base_color = theme["hover"]
                         
                     pygame.draw.rect(self.screen, base_color, rect)
-                    # 3D edge effect
                     pygame.draw.line(self.screen, theme["highlight"], rect.topleft, rect.topright, 2)
                     pygame.draw.line(self.screen, theme["highlight"], rect.topleft, rect.bottomleft, 2)
                     pygame.draw.line(self.screen, theme["shadow"], rect.bottomleft, rect.bottomright, 2)
                     pygame.draw.line(self.screen, theme["shadow"], rect.topright, rect.bottomright, 2)
                     
                     if self.board.flagged[y][x]:
-                        # Animation scale for flag drop
                         anim_time = current_time - self.board.flag_times[y][x]
-                        anim_progress = min(1.0, anim_time / 75.0) # 75ms animation
+                        anim_progress = min(1.0, anim_time / 75.0)
                         
-                        # Add a tiny bounce effect (overshoot then settle)
                         scale = self.cell_size / 30.0
                         if anim_progress < 1.0:
                             scale = scale * (1.2 - abs(anim_progress - 0.5) * 0.4) 
@@ -502,41 +454,32 @@ class Game:
                         ])
                         pygame.draw.line(self.screen, BLACK, (cx - 2*scale, cy - 8*scale), (cx - 2*scale, cy + 10*scale), int(max(1, 2*scale)))
                         
-                    # Reveal all unflagged mines at end
                     if self.board.game_over and not self.board.won and self.board.grid[y][x] == -1 and not self.board.flagged[y][x]:
                         pygame.draw.rect(self.screen, theme["revealed"], rect)
                         pygame.draw.rect(self.screen, theme["grid"], rect, 1)
-                        # Pop in animation for end-game mines
-                        anim_time = current_time - self.end_time * 1000 # Rough estimate based on end time 
+                        anim_time = current_time - self.end_time * 1000 
                         radius = min(self.cell_size // 4, max(4, int(self.cell_size // 4 * min(1.0, (current_time % 1000)/150.0))))
                         pygame.draw.circle(self.screen, BLACK, rect.center, radius)
                         
-                    # Draw crossed out wrong flags at end
                     if self.board.game_over and not self.board.won and self.board.flagged[y][x] and self.board.grid[y][x] != -1:
                         pygame.draw.line(self.screen, RED, rect.topleft, rect.bottomright, 3)
                         pygame.draw.line(self.screen, RED, rect.topright, rect.bottomleft, 3)
                         
                 else:
-                    # Draw revealed clear tile
                     pygame.draw.rect(self.screen, theme["revealed"], rect)
                     pygame.draw.rect(self.screen, theme["grid"], rect, 1)
                     
-                    # Pop animation state
                     time_since_reveal = current_time - self.board.reveal_times[y][x]
-                    # Alpha or scale fade-in for contents
-                    anim_scale = min(1.0, time_since_reveal / 100.0) # 100ms ease in
+                    anim_scale = min(1.0, time_since_reveal / 100.0) 
                     
                     if self.board.grid[y][x] == -1:
-                        # Draw exploded mine
                         pygame.draw.rect(self.screen, RED, rect)
                         pygame.draw.circle(self.screen, BLACK, rect.center, int((self.cell_size // 4) * anim_scale))
                     elif self.board.grid[y][x] > 0:
-                        # Draw number
                         val = self.board.grid[y][x]
                         color = NUM_COLORS.get(val, BLACK)
-                        # Scale font size slightly based on animation (decreased multiplier from 0.7 to 0.5)
                         font_size = int(self.cell_size * 0.5 * (0.5 + 0.5 * anim_scale))
-                        if font_size > 5: # prevent crash on tiny fonts during anim
+                        if font_size > 5: 
                             font = pygame.font.Font(font_path, font_size)
                             text = font.render(str(val), False, color)
                             text_rect = text.get_rect(center=rect.center)
@@ -544,17 +487,13 @@ class Game:
 
     def draw_ui(self):
         theme = self.theme
-        # Draw top bar background
         pygame.draw.rect(self.screen, theme["bg"], (0, 0, self.screen.get_width(), TOP_BAR_HEIGHT))
         
-        # UI Elements
         self.reset_btn.draw(self.screen, theme)
         
-        # Flags Counter
         flags_left = self.board.num_mines - self.board.flags_placed
         flag_text = font_title.render(f"{flags_left:03d}", False, RED)
         
-        # Timer
         time_elapsed = self.get_time_elapsed()
         if self.board.game_over and not self.board.first_click:
             time_str = f"{time_elapsed:.1f}"
@@ -563,11 +502,9 @@ class Game:
             time_str = f"{int(time_elapsed):03d}"
             time_text = font_title.render(time_str, False, RED)
         
-        # Positioning for flags and timer
         flag_bg = pygame.Rect(self.screen.get_width() // 2 - 140, 25, 70, 40)
         time_bg = pygame.Rect(self.screen.get_width() // 2 + 70, 25, 70, 40)
         
-        # Draw background and a sleek inner shadow border for Counters
         pygame.draw.rect(self.screen, BLACK, flag_bg, border_radius=6)
         pygame.draw.rect(self.screen, theme["shadow"], flag_bg, width=2, border_radius=6)
         
@@ -577,7 +514,6 @@ class Game:
         self.screen.blit(flag_text, flag_text.get_rect(center=flag_bg.center))
         self.screen.blit(time_text, time_text.get_rect(center=time_bg.center))
         
-        # Draw Labels
         lbl_diff = font_small.render("Difficulty", False, BLACK)
         self.screen.blit(lbl_diff, lbl_diff.get_rect(centerx=self.dropdown.rect.centerx, y=5))
         
@@ -590,18 +526,17 @@ class Game:
         lbl_time = font_small.render("Time", False, BLACK)
         self.screen.blit(lbl_time, lbl_time.get_rect(centerx=time_bg.centerx, y=5))
         
-        # Draw Game Over Text Overlay (Optional visual cue)
         if self.board.game_over:
             board_center_y = self.board_offset_y + (self.board.rows * self.cell_size) // 2
             
             if self.board.won:
                 title_msg = "YOU WIN!"
-                title_color = (0, 128, 0) # Green
+                title_color = (0, 128, 0) 
                 
                 if self.difficulty_name != "Custom" and self.best_time is not None:
                     if self.end_time <= self.best_time:
                         title_msg = "NEW RECORD!"
-                        title_color = (255, 215, 0) # Gold
+                        title_color = (255, 215, 0) 
                         
                     lines = [
                         (title_msg, font_large, title_color),
@@ -618,7 +553,6 @@ class Game:
                     ("GAME OVER!", font_large, RED)
                 ]
                 
-            # Compute total height and max width
             total_h = 0
             max_w = 0
             rendered_lines = []
@@ -628,7 +562,7 @@ class Game:
                 max_w = max(max_w, surf.get_width())
                 total_h += surf.get_height() + 10
             
-            total_h -= 10 # Remove trailing margin
+            total_h -= 10
             
             bg_rect = pygame.Rect(0, 0, max_w + 40, total_h + 30)
             bg_rect.center = (self.screen.get_width() // 2, board_center_y)
@@ -642,36 +576,29 @@ class Game:
                 self.screen.blit(surf, s_rect)
                 current_y += surf.get_height() + 10
 
-        # Draw custom popup over everything else if open
         if self.custom_popup_open:
-            # Draw overlay
             overlay = pygame.Surface((self.width, self.height))
             overlay.set_alpha(128)
             overlay.fill((0, 0, 0))
             self.screen.blit(overlay, (0,0))
             
-            # Draw popup background
             pygame.draw.rect(self.screen, theme["bg"], self.popup_rect)
             pygame.draw.rect(self.screen, BLACK, self.popup_rect, 3)
             
-            # Draw popup title
             title = font_large.render("Custom Difficulty", False, BLACK)
             self.screen.blit(title, (self.popup_rect.centerx - title.get_width()//2, self.popup_rect.y + 15))
             
-            # Draw labels with limits
             lbl_w = font_medium.render(f"Cols ({MIN_CUSTOM_COLS}-{MAX_CUSTOM_COLS}):", False, BLACK)
             lbl_h = font_medium.render(f"Rows ({MIN_CUSTOM_ROWS}-{MAX_CUSTOM_ROWS}):", False, BLACK)
             
             self.screen.blit(lbl_w, (self.popup_rect.x + 20, self.popup_rect.y + 65))
             self.screen.blit(lbl_h, (self.popup_rect.x + 20, self.popup_rect.y + 125))
             
-            # Draw inputs and buttons
             self.input_cols.draw(self.screen, theme)
             self.input_rows.draw(self.screen, theme)
             self.apply_btn.draw(self.screen, theme)
             self.cancel_btn.draw(self.screen, theme)
             
-            # Info text for mines
             try:
                 c = int(self.input_cols.text)
                 r = int(self.input_rows.text)
@@ -681,9 +608,6 @@ class Game:
             mines_lbl = font_small.render(f"Calculated Mines: {preview_mines}", False, BLACK)
             self.screen.blit(mines_lbl, (self.popup_rect.centerx - mines_lbl.get_width()//2, self.popup_rect.y + 160))
 
-        # Draw dropdowns last so they overlap the board if open
-        # Draw difficulty then theme to stack correctly depending on open order,
-        # but generally they shouldn't overlap each other
         if not self.custom_popup_open:
             self.dropdown.draw(self.screen, theme)
             self.theme_dropdown.draw(self.screen, theme)
@@ -711,11 +635,9 @@ class Game:
                     self.height = event.h
                     self.update_screen_size()
                 
-                # Check keyboard reset
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_r and not self.custom_popup_open:
                     self.reset_game()
 
-                # Handle Popup events
                 if self.custom_popup_open:
                     self.input_cols.handle_event(event)
                     self.input_rows.handle_event(event)
@@ -728,16 +650,12 @@ class Game:
                         
                     if self.cancel_btn.is_clicked(event):
                         self.custom_popup_open = False
-                        # Revert difficulty to previous if it was just selected
                         if self.difficulty_name == "Custom":
-                            # We'll just stay on custom with previous settings
                             pass 
                         continue
                         
-                    # Skip rest of event handling while popup is open
                     continue
 
-                # Handle top UI clicks
                 if not self.dropdown.is_open and not self.theme_dropdown.is_open and self.reset_btn.is_clicked(event):
                     self.reset_game()
                     continue
@@ -755,12 +673,10 @@ class Game:
                         self.difficulty_name = new_diff
                         if new_diff == "Custom":
                             self.custom_popup_open = True
-                            # Don't reset game until they hit Apply
                         else:
                             self.reset_game(diff_changed=True)
                     continue
                 
-                # Handle board clicks
                 if not self.dropdown.is_open and not self.theme_dropdown.is_open and event.type == pygame.MOUSEBUTTONDOWN and not self.board.game_over:
                     x, y = event.pos
                     if y >= self.board_offset_y and x >= self.board_offset_x:
@@ -768,7 +684,7 @@ class Game:
                         grid_y = (y - self.board_offset_y) // self.cell_size
                         
                         if 0 <= grid_x < self.board.cols and 0 <= grid_y < self.board.rows:
-                            if event.button == 1: # Left click (Reveal)
+                            if event.button == 1:
                                 if self.board.first_click:
                                     self.start_timer = time.time()
                                 self.board.reveal(grid_x, grid_y)
@@ -776,15 +692,12 @@ class Game:
                                     self.end_time = time.time() - self.start_timer
                                     if self.board.won and self.difficulty_name != "Custom":
                                         self.best_time = self.db.update_time(self.difficulty_name, self.end_time)
-                            elif event.button == 3: # Right click (Flag)
+                            elif event.button == 3:
                                 self.board.toggle_flag(grid_x, grid_y)
 
-                # Reset fast by clicking when game is over
                 elif self.board.game_over and event.type == pygame.MOUSEBUTTONDOWN and not self.dropdown.is_open and not self.theme_dropdown.is_open:
-                    # Give a small grace period to avoid accidental resets on multi-click
                     x, y = event.pos
                     if y >= self.board_offset_y:
-                        # Allow restart from click on board on game over
                         self.reset_game()
 
             self.draw_board(mouse_pos)
