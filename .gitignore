@@ -1,2 +1,4 @@
 /__pycache__
 times.db
+/Utils
+*.bat
