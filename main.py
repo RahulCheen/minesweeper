@@ -493,8 +493,8 @@ class Game:
                         # Draw number
                         val = self.board.grid[y][x]
                         color = NUM_COLORS.get(val, BLACK)
-                        # Scale font size slightly based on animation
-                        font_size = int(self.cell_size * 0.7 * (0.5 + 0.5 * anim_scale))
+                        # Scale font size slightly based on animation (decreased multiplier from 0.7 to 0.5)
+                        font_size = int(self.cell_size * 0.5 * (0.5 + 0.5 * anim_scale))
                         if font_size > 5: # prevent crash on tiny fonts during anim
                             font = pygame.font.Font(font_path, font_size)
                             text = font.render(str(val), False, color)
@@ -517,9 +517,10 @@ class Game:
         time_elapsed = self.get_time_elapsed()
         if self.board.game_over and not self.board.first_click:
             time_str = f"{time_elapsed:.1f}"
+            time_text = font_large.render(time_str, False, RED)
         else:
             time_str = f"{int(time_elapsed):03d}"
-        time_text = font_title.render(time_str, False, RED)
+            time_text = font_title.render(time_str, False, RED)
         
         # Positioning for flags and timer
         flag_bg = pygame.Rect(self.screen.get_width() // 2 - 140, 25, 70, 40)
